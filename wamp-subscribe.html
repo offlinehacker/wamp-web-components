@@ -1,0 +1,210 @@
+<!--
+@license
+Copyright (c) 2015 Jaka Hudoklin. All rights reserved.
+This code may only be used under the MIT license found at
+https://opensource.org/licenses/MIT
+-->
+<link rel="import" href="../polymer/polymer.html">
+
+<!--
+Subscribes to wamp events.
+
+Example:
+
+    <template is="dom-bind>
+      <wamp-connection
+        url='ws://127.0.0.1:8080/ws'
+        realm='myrealm'
+        session='{{session}}'
+      ></wamp-connection>
+
+      <wamp-subscribe
+        session='{{session}}'
+        topic='com.myapp..update'
+        on-event="handleEvent"
+        wildcard
+        auto
+      ></wamp-subscribe>
+    </template>
+
+@group Wamp Elements
+@element wamp-subscribe
+@demo demo/pubsub.html
+@hero hero.svg
+-->
+<dom-module id="wamp-subscribe"></dom-module>
+
+<script>
+
+  Polymer({
+
+    is: 'wamp-subscribe',
+
+    /**
+     * Fired when a new message is received.
+     *
+     * @event event
+     */
+
+    /**
+     * Fired when error is raised.
+     *
+     * @event error
+     */
+
+    hostAttributes: {
+      hidden: true
+    },
+
+    properties: {
+
+      /*
+       * Autobahn session passed to object
+       *
+       * @type {autobahn.Session}
+       */
+      session: {
+        type: Object,
+        notify: true
+      },
+
+      /*
+       * Currently active subscription
+       *
+       * @type {autobahn.Subscription}
+       */
+      subscription: {
+        type: Object,
+        notify: true,
+        readOnly: true
+      },
+
+      /**
+       * Subscription error
+       *
+       * @type {autobahn.Error}
+       */
+      subscriptionError: {
+        type: Object,
+        notify: true,
+        readOnly: true
+      },
+
+      /*
+       * Topic to subscribe to
+       */
+      topic: {
+        type: String,
+        notify: true
+      },
+
+      /*
+       * Enable wildard matching
+       */
+      wildcard: {
+        type: Boolean,
+        notify: true,
+        value: false
+      },
+
+      /*
+       * Enable prefix matching
+       */
+      prefix: {
+        type: Boolean,
+        notify: true,
+        value: false
+      },
+
+      /**
+       * If true, automatically subscribes to wamp events when either `topic`,
+       * `args` or `kwargs` changes.
+       */
+      auto: {
+        type: Boolean,
+        value: false
+      },
+
+      /**
+       * Last received event
+       *
+       * @type {Object}
+       */
+      lastEvent: {
+        type: Object,
+        notify: true,
+        readOnly: true
+      },
+
+      /**
+       * Length of time in milliseconds to debounce multiple subscription changes.
+       */
+      debounceDuration: {
+        type: Number,
+        value: 0,
+        notify: true
+      }
+    },
+
+    observers: [
+      '_subscriptionOptionsChanged(session, topic, wildcard, prefix)'
+    ],
+
+    subscribe: function() {
+      if (this.session == null || this.topic == null) {
+        return;
+      }
+
+      if (this.subscription) {
+        this.session.unsubscribe(this.subscription);
+      }
+
+      var options = {};
+      if (this.prefix) {
+        options.match = 'prefix';
+      } else if(this.wildcard) {
+        options.match = 'wildcard';
+      }
+
+      this.session
+        .subscribe(this.topic, this._handleEvent.bind(this), options)
+        .then(this._handleSubscription.bind(this))
+        .catch(this._handleError.bind(this));
+    },
+
+    _subscriptionOptionsChanged: function() {
+      this.debounce('subscribe', function() {
+        if(this.auto) {
+          this.subscribe();
+        }
+      }, this.debounceDuration);
+    },
+
+    _handleSubscription: function(subscription) {
+      this._setSubscription(subscription);
+      this._setSubscriptionError(null);
+      this._setLastEvent(null);
+    },
+
+    _handleError: function(error) {
+      this._setSubscription(null);
+      this._setSubscriptionError(error);
+    },
+
+    _handleEvent: function(args, kwargs, details) {
+      var event = {args: args, kwargs: kwargs, details: details};
+      this.fire('event', event);
+      this._setLastEvent(event);
+    },
+
+    detached: function() {
+      if (this.session == null || this.subscription == null) {
+        return;
+      }
+
+      this.session.unsubscribe(this.subscription);
+    }
+
+  });
+
+</script>

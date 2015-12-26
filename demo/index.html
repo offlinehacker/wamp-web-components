@@ -1,0 +1,105 @@
+<!doctype html>
+<!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+    <title>wamp-connection Demo</title>
+    <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+    <link rel="import" href="../wamp-connection.html">
+    <link rel="import" href="../wamp-call.html">
+    <link rel="import" href="../wamp-subscribe.html">
+  </head>
+  <body unresolved>
+
+    <template is="dom-bind" id="app">
+      <wamp-connection
+        url='ws://127.0.0.1:8080/ws'
+        realm='realm1'
+        connected='{{connected}}'
+        retrying='{{retrying}}'
+        session='{{session}}'
+      ></wamp-connection>
+
+      <template is="dom-if" if="[[connected]]">
+        <p>Autobahn is connected</p>
+      </template>
+
+      <template is="dom-if" if="[[!connected]]">
+        <p>Autobahn is not connected</p>
+      </template>
+
+      <template is="dom-if" if="[[retrying]]">
+        <p>Autobahn is retrying connection</p>
+      </template>
+
+      <wamp-call
+        method='wamp.registration.list'
+        session='{{session}}'
+        last-response='{{registrations}}'
+        on-response='refreshRegistrations'
+        auto
+      ></wamp-call>
+
+      <ul>
+        <template is="dom-repeat" items='[[toObjectArray(registrations.exact)]]'>
+          <wamp-call
+            method='wamp.registration.get'
+            args='{{toArray(item.value)}}'
+            session='{{session}}'
+            last-response='{{item.registration}}'
+            last-error='{{item.error}}'
+            on-response="refreshRegistration"
+            auto
+          ></wamp-call>
+          <li>
+            <p>error: {{item.error.error.error}}</p>
+            <p>method: {{item.registration.uri}}</p>
+            <p>match: {{item.registration.match}}</p>
+            <p>created: {{item.registration.created}}</p>
+          </li>
+        </template>
+
+        <wamp-subscribe
+          session='{{session}}'
+          topic='com.myapp..update'
+          on-event="handleEvent"
+          wildcard
+        ></wamp-subscribe>
+      </template>
+    </ul>
+
+    <script>
+      var app = document.querySelector('#app');
+      app.toArray = function(item) {
+        return [item];
+      };
+      app.toObjectArray = function(items) {
+        var result = [];
+        for (item in items) result.push({value: items[item]});
+        return result;
+      };
+      app.refreshRegistrations = function(registrations) {
+        setTimeout(function() {
+          registrations.target.generateRequest();
+        }, 10000);
+      };
+      app.refreshRegistration = function(registration) {
+        setTimeout(function() {
+          registration.target.generateRequest();
+        }, 1000);
+      };
+      app.handleEvent = function(event) {
+      };
+    </script>
+
+  </body>
+</html>

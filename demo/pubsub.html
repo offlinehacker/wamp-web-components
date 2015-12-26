@@ -1,0 +1,74 @@
+<!doctype html>
+<!--
+@license
+Copyright (c) 2015 Jaka Hudoklin. All rights reserved.
+This code may only be used under the MIT license found at
+https://opensource.org/licenses/MIT
+-->
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+    <title>wamp-polymer pub/sub Demo</title>
+    <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+    <link rel="import" href="../wamp-connection.html">
+    <link rel="import" href="../wamp-publish.html">
+    <link rel="import" href="../wamp-subscribe.html">
+  </head>
+  <body unresolved>
+
+    <template is="dom-bind" id="app">
+      <wamp-connection
+        url='ws://127.0.0.1:8080/ws'
+        realm='realm1'
+        session='{{session}}'
+      ></wamp-connection>
+
+      <wamp-publish id="publisher"
+        session='{{session}}'
+        topic='{{topic}}'
+        args='{{toArray(message)}}'
+        last-error='{{publishError}}'
+        last-event='{{publishEvent}}'
+        acknowledge
+        include-me
+      ></wamp-publish>
+
+      <wamp-subscribe
+        session='{{session}}'
+        topic='{{subscribeTopic}}'
+        subscription-error='{{subscribeError}}'
+        last-event='{{subscribeEvent}}'
+        debounce-duration='500'
+        auto
+      ></wamp-subscribe>
+
+      <h2>Publish events: </h2>
+      <a>Topic: </a><input value="{{topic::input}}"></p>
+      <a>Message: </a><input value="{{message::input}}"></p>
+      <button on-click="handlePublish">Publish</button>
+      <template is="dom-if" if="[[publishError]]">
+        <p>Error publishing event</p>
+      </template>
+      <template is="dom-if" if="[[publishEvent]]">
+        <p>Event published</p>
+      </template>
+
+      <h2>Subscribe events: </h2>
+      <a>Topic: </a><input value="{{subscribeTopic::input}}"></p>
+      <a>Last event: </a><a>{{subscribeEvent.args}}</a>
+
+    </template>
+
+    <script>
+      var app = document.querySelector('#app');
+      app.toArray = function(item) {
+        return [item];
+      };
+      app.handlePublish = function() {
+        this.$.publisher.generateEvent();
+      };
+    </script>
+
+  </body>
+</html>

@@ -1,0 +1,204 @@
+<!--
+@license
+Copyright (c) 2015 Jaka Hudoklin. All rights reserved.
+This code may only be used under the MIT license found at
+https://opensource.org/licenses/MIT
+-->
+<link rel="import" href="../polymer/polymer.html">
+
+<!--
+Calls wamp method.
+
+Example:
+
+    <template is="dom-bind id="app">
+      <wamp-connection
+        url='ws://127.0.0.1:8080/ws'
+        realm='realm1'
+        session='{{session}}'
+      ></wamp-connection>
+
+      <wamp-register
+        method='wamp.myapp.call'
+        session='{{session}}'
+        on-call="handleCall"
+      ></wamp-register>
+    </template>
+
+    <script>
+      var app = document.querySelector('#app');
+      app.handleCall = function(e) {
+        var call = e.detail;
+        console.log("called:", call.args, call.kwargs);
+        call.resolve();
+      };
+    </script>
+
+@group Wamp Elements
+@element wamp-register
+@demo demo/rpc.html
+@hero hero.svg
+-->
+<dom-module id="wamp-register"></dom-module>
+
+<script>
+
+  Polymer({
+
+    is: 'wamp-register',
+
+    /**
+     * Fired when call is registered
+     *
+     * @event register
+     */
+
+    /**
+     * Fired when a call is made
+     *
+     * @event call
+     */
+
+    /**
+     * Fired when there was an error with registration.
+     *
+     * @event error
+     */
+
+    hostAttributes: {
+      hidden: true
+    },
+
+    properties: {
+
+      /*
+       * Autobahn session passed to object
+       *
+       * @type {autobahn.Session}
+       */
+      session: {
+        type: Object,
+        notify: true
+      },
+
+      /*
+       * Method to register
+       */
+      method: {
+        type: String,
+        notify: true,
+      },
+
+      /*
+       * Enable wildard matching
+       */
+      wildcard: {
+        type: Boolean,
+        notify: true,
+        value: false
+      },
+
+      /*
+       * Enable prefix matching
+       */
+      prefix: {
+        type: Boolean,
+        notify: true,
+        value: false
+      },
+
+      /**
+       * Method registration
+       *
+       * @type {autobahn.Registration}
+       */
+      regstration: {
+        type: Object,
+        notify: true,
+        readOnly: true
+      },
+
+      /**
+       * Registration error
+       *
+       * @type {autobahn.Error}
+       */
+      registrationError: {
+        type: Object,
+        notify: true,
+        readOnly: true
+      }
+    },
+
+    observers: [
+      '_registerOptionsChanged(session, method)'
+    ],
+
+    register: function() {
+      if (this.method == null || this.session == null) {
+        return;
+      }
+
+      var options = {};
+
+      if (this.prefix) {
+        options.match = 'prefix';
+      } else if (this.wildcard) {
+        options.match = 'wildcard';
+      }
+
+      var registration = this.session.register(this.method, this._handleCall, options);
+
+      registration
+        .then(this._handleRegistartion.bind(this))
+        .catch(this._handleError.bind(this, request));
+
+      return registration;
+    },
+
+    _handleCall: function(args, kwargs, details) {
+      return new Promise(function(resolve, reject) {
+        var callArgs = {
+          args: args,
+          kwargs: kwargs,
+          details: details,
+          resolve: resolve,
+          reject: reject
+        };
+
+        this.fire('call', callArgs);
+      });
+    },
+
+    _handleRegistration: function(registration) {
+      this._setRegistration(registration);
+      this._setRegistrationError(null);;
+
+      this.fire('register', registration, {bubbles: false});
+    },
+
+    _handleError: function(request, error) {
+      this._setRegistrationError(error);
+      this._setRegistration(null);
+      this.fire('error', error, {bubbles: false});
+    },
+
+    _registerOptionsChanged: function() {
+      if (this.registration != null) {
+        this.session.unregister(this.registration)
+      }
+
+      this.register();
+    },
+
+    detached: function() {
+      if (this.session == null || this.registration == null) {
+        return;
+      }
+
+      this.session.unregister(this.registration);
+    }
+
+  });
+
+</script>

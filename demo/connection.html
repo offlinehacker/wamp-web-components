@@ -1,0 +1,40 @@
+<!doctype html>
+<!--
+@license
+Copyright (c) 2015 Jaka Hudoklin. All rights reserved.
+This code may only be used under the MIT license found at
+https://opensource.org/licenses/MIT
+-->
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+    <title>wamp-polymer connection Demo</title>
+    <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+    <link rel="import" href="../wamp-connection.html">
+  </head>
+  <body unresolved>
+
+    <template is="dom-bind">
+      <wamp-connection
+        url='ws://127.0.0.1:8080/ws'
+        realm='realm1'
+        connected='{{connected}}'
+        retrying='{{retrying}}'
+      ></wamp-connection>
+
+      <template is="dom-if" if="[[connected]]">
+        <p>Wamp is connected</p>
+      </template>
+
+      <template is="dom-if" if="[[!connected]]">
+        <p>Wamp is not connected</p>
+      </template>
+
+      <template is="dom-if" if="[[retrying]]">
+        <p>Autobahn is retrying connection</p>
+      </template>
+    </template>
+
+  </body>
+</html>

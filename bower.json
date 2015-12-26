@@ -1,0 +1,36 @@
+{
+  "name": "wamp-web-components",
+  "version": "0.1.0",
+  "authors": [
+    "Jaka Hudoklin <jakahudoklin@gmail.com>"
+  ],
+  "description": "Web application messaging protocol polymer web components.",
+  "keywords": [
+    "web-component",
+    "polymer",
+    "seed",
+    "wamp",
+    "autobahn"
+  ],
+  "main": [
+    "wamp-connection.html",
+    "wamp-register",
+    "wamp-call.html",
+    "wamp-publish.html",
+    "wamp-subscribe.html"
+  ],
+  "license": "https://opensource.org/licenses/MIT",
+  "homepage": "https://github.com/offlinehacker/wamp-web-components/",
+  "ignore": [
+    "/.*",
+    "/test/"
+  ],
+  "dependencies": {
+    "polymer": "Polymer/polymer#^1.1.0",
+    "autobahnjs": "autobahn#~0.9.9"
+  },
+  "devDependencies": {
+    "iron-component-page": "PolymerElements/iron-component-page#^1.0.0",
+    "web-component-tester": "*"
+  }
+}

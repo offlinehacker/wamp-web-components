@@ -1,0 +1,220 @@
+<!--
+@license
+Copyright (c) 2015 Jaka Hudoklin. All rights reserved.
+This code may only be used under the MIT license found at
+https://opensource.org/licenses/MIT
+-->
+<link rel="import" href="../polymer/polymer.html">
+
+<!--
+Publishes wamp event.
+
+Example:
+
+    <template is="dom-bind>
+      <wamp-connection
+        url='ws://127.0.0.1:8080/ws'
+        realm='myrealm'
+        session='{{session}}'
+      ></wamp-connection>
+
+      <wamp-publish
+        session='{{session}}'
+        topic='com.myapp.client'
+        kwargs='{"alive": true}'
+        last-error='{{error}}'
+        last-event='{{event}}'
+        auto
+      ></wamp-publish>
+
+      <template is="dom-if" if="[[error]]">
+        <a>Error publishing event</a>
+      </template>
+
+      <template is="dom-if" if="[[event]]">
+        <a>Event published</a>
+      </template>
+    </template>
+
+@group Autobahn Elements
+@element wamp-publish
+@demo demo/pubsub.html
+@hero hero.svg
+-->
+<dom-module id="wamp-publish"></dom-module>
+
+<script>
+
+  Polymer({
+
+    is: 'wamp-publish',
+
+    /**
+     * Fired when event is published.
+     *
+     * @event publish
+     */
+
+    /**
+     * Fired when an error is received.
+     *
+     * @event error
+     */
+
+    hostAttributes: {
+      hidden: true
+    },
+
+    properties: {
+
+      /*
+       * Autobahn session passed to object
+       *
+       * @type {autobahn.Session}
+       */
+      session: {
+        type: Object,
+        notify: true
+      },
+
+      /*
+       * Topic to subscribe to
+       */
+      topic: {
+        type: String,
+        notify: true
+      },
+
+      /*
+       * List of arguments to pass to event
+       */
+      args: {
+        type: Array,
+        notify: true,
+        value: []
+      },
+
+      /*
+       * Keyword arguments to pass to event
+       */
+      kwargs: {
+        type: Object,
+        notify: true,
+        value: {}
+      },
+
+      /*
+       * Last published event
+       */
+      lastEvent: {
+        type: Object,
+        notify: true,
+        readOnly: true
+      },
+
+      /**
+       * Error from last published event.
+       */
+      lastError: {
+        type: Object,
+        notify: true,
+        readOnly: true
+      },
+
+      /**
+       * If true, automatically publishes event when either `method` or
+       * `args` or `kwargs` changes.
+       */
+      auto: {
+        type: Boolean,
+        value: false
+      },
+
+      /**
+       * Whether event should be received by event publisher.
+       */
+      includeMe: {
+        type: Boolean,
+        value: false
+      },
+
+      /**
+       * Whether identity of the publisher is included in event.
+       */
+      discloseMe: {
+        type: Boolean,
+        value: false
+      },
+
+      /**
+       * Length of time in milliseconds to debounce multiple automatically generated events.
+       */
+      debounceDuration: {
+        type: Number,
+        value: 0,
+        notify: true
+      }
+    },
+
+    observers: [
+      '_publishOptionsChanged(session, topic, args, kwargs.*)'
+    ],
+
+    generateEvent: function() {
+      if (this.topic == null || this.session == null) {
+        return;
+      }
+
+      var event = {
+        topic: this.topic,
+        args: this.args,
+        kwargs: this.kwargs
+      };
+
+      var options = {
+        acknowledge: this.acknowledge,
+        exclude_me: !this.includeMe,
+        disclose_me: this.discloseMe
+      };
+
+      var acknowledge = this.session
+        .publish(event.topic, event.args, event.kwargs, options);
+
+      if (acknowledge) {
+        return acknowledge
+          .then(this._handleEvent.bind(this, event))
+          .catch(this._handleError.bind(this, event));
+      } else {
+        return this._handleEvent(event);
+      }
+    },
+
+    _handleEvent: function(event, acknowledge) {
+      event.acknowledge = acknowledge;
+
+      this._setLastEvent(event);
+      this._setLastError(null);
+
+      this.fire('publish', event);
+
+      return Promise.resolve(event);
+    },
+
+    _handleError: function(event, error) {
+      this._setLastError({ event: event, error: error });
+      this._setLastEvent(null);
+
+      this.fire('error', { event: event, error: error }, {bubbles: false});
+    },
+
+    _publishOptionsChanged: function() {
+      this.debounce('generateEvent', function() {
+        if(this.auto) {
+          this.generateEvent();
+        }
+      }, this.debounceDuration);
+    }
+
+  });
+
+</script>

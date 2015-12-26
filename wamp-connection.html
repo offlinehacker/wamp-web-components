@@ -1,0 +1,185 @@
+<!--
+@license
+Copyright (c) 2015 Jaka Hudoklin. All rights reserved.
+This code may only be used under the MIT license found at
+https://opensource.org/licenses/MIT
+-->
+<link rel="import" href="../polymer/polymer.html">
+
+<!--
+Connects to wamp router.
+
+Example:
+
+    <template is="dom-bind>
+      <wamp-connection
+        url='ws://127.0.0.1:8080/ws'
+        realm='myrealm'
+        session='{{session}}'
+      ></wamp-connection>
+
+      <wamp-call
+        method='com.myapp.register'
+        session='[[session]]'
+        auto
+      ></wamp-call>
+    </template>
+
+@group Wamp Elements
+@element wamp-connection
+@demo demo/connection.html
+@hero hero.svg
+-->
+<dom-module id="wamp-connection"></dom-module>
+
+<script src="../autobahnjs/autobahn.js"></script>
+<script>
+
+  Polymer({
+
+    is: 'wamp-connection',
+
+    /**
+     * Fired when a connection is opened.
+     *
+     * @event open
+     */
+
+    /**
+     * Fired when a connection is closed.
+     *
+     * @event close
+     */
+
+    hostAttributes: {
+      hidden: true
+    },
+
+    properties: {
+
+      /**
+       * Autobahn router url
+       */
+      url : {
+        type: String,
+        notify: true,
+        value: 'ws://127.0.0.1:8080/ws'
+      },
+
+      /**
+       * Autobahn realm
+       */
+      realm: {
+        type: String,
+        notify: true,
+        value: 'realm1'
+      },
+
+      /**
+       * Autobahn connection
+       *
+       * @type {autobahn.Connection}
+       */
+      connection: {
+        type: Object,
+        readOnly: true,
+        notify: true,
+        value: null
+      },
+
+      /**
+       * Autobahn session
+       *
+       * @type {autobahn.Session}
+       */
+      session: {
+        type: Object,
+        readOnly: true,
+        notify: true
+      },
+
+      /**
+       * Connection error
+       */
+      error: {
+        type: Object,
+        readOnly: true,
+        notify: true
+      },
+
+      /**
+       * Flag indicating whether autobahn is connected
+       */
+      connected: {
+        type: Boolean,
+        readOnly: true,
+        notify: true,
+        value: false
+      },
+
+      /**
+       * Flag indicating whether underlying session is open and attached to a realm
+       */
+      open: {
+        type: Boolean,
+        readOnly: true,
+        notify: true,
+        value: false
+      },
+
+      /**
+       * Flag indicating whether the connection is currently in a “try to reconnect” cycle
+       */
+      retrying: {
+        type: Boolean,
+        readOnly: true,
+        notify: true,
+        value: false
+      }
+
+    },
+
+    observers: [
+      '_connectionOptionsChanged(url, realm)'
+    ],
+
+    _connectionOptionsChanged: function() {
+      if (this.connection) {
+        this.connection.close();
+        this._setConnection(null);
+      }
+
+      var connection = new autobahn.Connection({
+        url: this.url,
+        realm: this.realm
+      });
+
+      this._setConnection(connection);
+
+      connection.onopen = function(session, details) {
+        this._setSession(session);
+
+        this.fire('open', connection);
+        this._connectedStatusChanged();
+      }.bind(this);
+
+      connection.onclose = function(reason, details) {
+        this._setSession(null);
+        this._setError({reason: reason, details: details});
+
+        this.fire('close', connection);
+        this._connectedStatusChanged();
+      }.bind(this);
+
+      connection.open();
+    },
+
+    _connectedStatusChanged: function() {
+      this._setConnected(this.connection.isConnected);
+      this._setOpen(this.connection.isOpen);
+      this._setRetrying(this.connection.isRetrying);
+    }
+
+  });
+
+</script>
