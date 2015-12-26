@@ -1,7 +1,7 @@
 # wamp-web-components
 
 Bundle of web components for web application messaging protocol based on
-[http://autobahn.ws/js/index.html](autobahn) javascript library.
+[autobahn](http://autobahn.ws/js/index.html) javascript library.
 
 ## Documentation
 
