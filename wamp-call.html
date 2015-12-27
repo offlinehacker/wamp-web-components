@@ -163,7 +163,7 @@ Example:
     },
 
     observers: [
-      '_requestOptionsChanged(session, method, auto, args, kwargs.*)'
+      '_requestOptionsChanged(session, method, auto, args.*, kwargs.*)'
     ],
 
     generateRequest: function() {

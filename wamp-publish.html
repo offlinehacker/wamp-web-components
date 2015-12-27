@@ -157,7 +157,7 @@ Example:
     },
 
     observers: [
-      '_publishOptionsChanged(session, topic, args, kwargs.*)'
+      '_publishOptionsChanged(session, topic, args.*, kwargs.*)'
     ],
 
     generateEvent: function() {
