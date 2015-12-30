@@ -1,0 +1,214 @@
+<!--
+@license
+Copyright (c) 2015 Jaka Hudoklin. All rights reserved.
+This code may only be used under the MIT license found at
+https://opensource.org/licenses/MIT
+-->
+<link rel="import" href="../polymer/polymer.html">
+
+<!--
+Wamp tester to mock-up sessions.
+
+Example:
+
+    <wamp-tester session='{{session}}'></wamp-tester>
+
+@group Wamp Elements
+@element wamp-tester
+@demo demo/connection.html
+@hero hero.svg
+-->
+<dom-module id="wamp-tester"></dom-module>
+
+<script>
+
+  Polymer({
+
+    is: 'wamp-tester',
+
+    /**
+     * Fired when a call is made
+     *
+     * @event call
+     */
+
+    /**
+     * Fired when a procedure is registered.
+     *
+     * @event register
+     */
+
+    /**
+     * Fired when subscription is made.
+     *
+     * @event subscribe
+     */
+
+    /**
+     * Fired when unsubsribe request is made.
+     *
+     * @event unsubscribe
+     */
+
+    /**
+     * Fired when event is published.
+     *
+     * @event publish
+     */
+
+    hostAttributes: {
+      hidden: true
+    },
+
+    properties: {
+
+      /**
+       * Autobahn session mock
+       */
+      session: {
+        type: Object,
+        notify: true
+      },
+
+      /**
+       * List of subscriptions registered with session
+       */
+      subscriptions: {
+        type: Array,
+        readOnly: true,
+        value: function() {
+          return [];
+        }
+      },
+
+      /**
+       * List of requests to unsubscribe
+       */
+      unsubscriptions: {
+        type: Array,
+        readOnly: true,
+        value: function() {
+          return [];
+        }
+      },
+
+      /**
+       * List of procedure registations registered with session
+       */
+      registrations: {
+        type: Array,
+        readOnly: true,
+        notify: true,
+        value: function() {
+          return [];
+        }
+      },
+
+      /**
+       * List of published events
+       */
+      published: {
+        type: Array,
+        notify: true,
+        value: function() {
+          return [];
+        }
+      },
+
+      /**
+       * List of called procedures
+       */
+      called: {
+        type: Array,
+        readOnly: true,
+        notify: true,
+        value: function() {
+          return [];
+        }
+      }
+    },
+
+    ready: function() {
+      this.session = this;
+    },
+
+    call: function(procedure, args, kwargs) {
+      var self = this;
+      return new Promise(function(resolve, reject) {
+        var call = {
+          procedure: procedure,
+          args: args,
+          kwargs: kwargs,
+          resolve: resolve,
+          reject: reject
+        };
+
+        self.push('calls', call);
+        self.fire('call', call);
+      });
+    },
+
+    register: function(procedure, endpoint, options) {
+      var registration = {
+        procedure: procedure,
+        endpoint: endpoint,
+        options: options
+      };
+
+      this.push('registrations', registration);
+      this.fire('register', registration);
+    },
+
+    subscribe: function(topic, handler, options) {
+      return new Promise(function(resolve, reject) {
+        var subscription = {
+          topic: topic,
+          handler: handler,
+          options: options,
+          resolve: resolve,
+          reject: reject
+        };
+
+        this.push('subscriptions', subscription);
+        this.fire('subscribe', subscription);
+
+        return subscription;
+      }.bind(this));
+    },
+
+    unsubscribe: function(subscription) {
+      return new Promise(function(resolve, reject) {
+        var unsubscription = {
+          subscription: subscription,
+          resolve: resolve,
+          reject: reject
+        };
+
+        this.push('unsubscriptions', unsubscription);
+        this.fire('unsubscribe', unsubscription);
+      }.bind(this));
+    },
+
+    publish: function(topic, args, kwargs, options) {
+      var self = this;
+
+      var result = new Promise(function(resolve, reject) {
+        var publication = {
+          topic: topic,
+          args: args,
+          kwargs: kwargs,
+          options: options,
+          resolve: resolve,
+          reject: reject
+        };
+
+        self.push('published', publication);
+        self.fire('publish', publication);
+      });
+
+      if (options.acknowledge) return result;
+    }
+
+  });
+
+</script>
