@@ -1,0 +1,102 @@
+<!--
+@license
+Copyright (c) 2015 Jaka Hudoklin. All rights reserved.
+This code may only be used under the MIT license found at
+https://opensource.org/licenses/MIT
+-->
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+
+    <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+    <script src="../../web-component-tester/browser.js"></script>
+
+    <!-- Step 1: import the element to test -->
+    <link rel="import" href="../wamp-tester.html">
+    <link rel="import" href="../wamp-publish.html">
+  </head>
+  <body>
+
+  <!-- You can use the document as a place to set up your fixtures. -->
+  <template is="dom-bind" id="TrivialPublish">
+    <wamp-tester
+      session='{{session}}'
+      on-publish="handleEvent"
+    ></wamp-tester>
+    <wamp-publish
+      id="publish"
+      session='{{session}}'
+      topic="com.myapp.test"
+      args='["arg"]'
+      kwargs='{"key": "value"}'
+    ></wamp-publish>
+  </template>
+
+  <template is="dom-bind" id="PublishAcknowledge">
+    <wamp-tester
+      session='{{session}}'
+      on-publish="handleEvent"
+    ></wamp-tester>
+    <wamp-publish
+      id="publish"
+      session='{{session}}'
+      topic="com.myapp.test"
+      args='["arg"]'
+      kwargs='{"key": "value"}'
+      acknowledge
+    ></wamp-publish>
+  </template>
+
+  <template is="dom-bind" id="PublishAuto">
+    <wamp-tester session='{{session}}' id="tester"></wamp-tester>
+    <wamp-publish
+      id="publish"
+      session='{{session}}'
+      topic="com.myapp.test"
+      args='["arg"]'
+      kwargs='{"key": "value"}'
+      auto
+    ></wamp-publish>
+  </template>
+
+  <script>
+    suite('<wamp-publish>', function() {
+      test('publish event', function(done) {
+        var app = document.querySelector("#TrivialPublish");
+        app.handleEvent = function(e, data) {
+          expect(data.topic).to.be.equal('com.myapp.test');
+          expect(data.args[0]).to.be.equal("arg");
+          expect(data.kwargs.key).to.be.equal("value");
+          done();
+        };
+        app.$.publish.generateEvent();
+      });
+
+      test('publish acknowledge', function(done) {
+        var app = document.querySelector("#PublishAcknowledge");
+        app.handleEvent = function(e, event) {
+          event.resolve(true);
+        };
+
+        var published = app.$.publish.generateEvent();
+
+        expect(published).to.be.ok;
+
+        published.then(function(result) {
+          expect(result.topic).to.be.equal('com.myapp.test');
+          expect(result.args[0]).to.be.equal("arg");
+          expect(result.kwargs.key).to.be.equal("value");
+          done();
+        });
+      });
+
+      test('auto publish', function() {
+        var tester = document.querySelector("#PublishAuto").$.tester;
+        expect(tester.published.length).to.be.eq(1);
+      });
+    });
+  </script>
+
+  </body>
+</html>

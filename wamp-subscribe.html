@@ -47,7 +47,7 @@ Example:
      */
 
     /**
-     * Fired when error is raised.
+     * Fired when there's error with subscription.
      *
      * @event error
      */
@@ -95,7 +95,8 @@ Example:
        */
       topic: {
         type: String,
-        notify: true
+        notify: true,
+        value: false
       },
 
       /*
@@ -155,10 +156,6 @@ Example:
         return;
       }
 
-      if (this.subscription) {
-        this.session.unsubscribe(this.subscription);
-      }
-
       var options = {};
       if (this.prefix) {
         options.match = 'prefix';
@@ -166,10 +163,24 @@ Example:
         options.match = 'wildcard';
       }
 
-      this.session
-        .subscribe(this.topic, this._handleEvent.bind(this), options)
-        .then(this._handleSubscription.bind(this))
-        .catch(this._handleError.bind(this));
+      return this.unsubscribe().then(function() {
+        return this.session
+          .subscribe(this.topic, this._handleEvent.bind(this), options)
+          .then(this._handleSubscription.bind(this))
+          .catch(this._handleError.bind(this));
+      }.bind(this));
+    },
+
+    unsubscribe: function() {
+      var result = Promise.resolve();
+
+      if (this.subscription && this.session) {
+        result = this.session.unsubscribe(this.subscription);
+        this.fire('unsubscribe', this.subscription);
+        this._setSubscription(null);
+      }
+
+      return result;
     },
 
     _subscriptionOptionsChanged: function() {
@@ -184,11 +195,15 @@ Example:
       this._setSubscription(subscription);
       this._setSubscriptionError(null);
       this._setLastEvent(null);
+
+      this.fire('subscribe', subscription);
     },
 
     _handleError: function(error) {
       this._setSubscription(null);
       this._setSubscriptionError(error);
+
+      this.fire('error', error);
     },
 
     _handleEvent: function(args, kwargs, details) {
@@ -198,11 +213,7 @@ Example:
     },
 
     detached: function() {
-      if (this.session == null || this.subscription == null) {
-        return;
-      }
-
-      this.session.unsubscribe(this.subscription);
+      this.unsubscribe();
     }
 
   });

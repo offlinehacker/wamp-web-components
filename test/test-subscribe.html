@@ -1,0 +1,126 @@
+<!--
+@license
+Copyright (c) 2015 Jaka Hudoklin. All rights reserved.
+This code may only be used under the MIT license found at
+https://opensource.org/licenses/MIT
+-->
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+
+    <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+    <script src="../../web-component-tester/browser.js"></script>
+
+    <!-- Step 1: import the element to test -->
+    <link rel="import" href="../wamp-tester.html">
+    <link rel="import" href="../wamp-subscribe.html">
+  </head>
+  <body>
+
+  <!-- You can use the document as a place to set up your fixtures. -->
+  <template is="dom-bind" id="TrivialSubscribe">
+    <wamp-tester
+      session='{{session}}'
+      id="tester"
+      on-subscribe="testerSubscribe"
+      on-unsubscribe="testerUnsubscribe"
+    ></wamp-tester>
+    <wamp-subscribe
+      id="subscriber"
+      session='{{session}}'
+      topic="com.myapp.test"
+      on-event="handleEvent"
+      on-subscribe="handleSubscribe"
+      on-unsubscribe="handleUnsubscribe"
+    ></wamp-subscribe>
+  </template>
+
+  <script>
+    suite('<wamp-subscribe>', function() {
+      var app;
+
+      setup(function() {
+        app = document.querySelector("#TrivialSubscribe");
+      });
+
+      teardown(function() {
+        app.testerSubscribe = undefined;
+        app.testerUnsubscribe = undefined;
+        app.handleSubscribe = undefined;
+        app.handleUnsubscribe = undefined;
+        app.handleEvent = undefined;
+      });
+
+      test('should subscribe', function(done) {
+        app.testerSubscribe = function(e, subscription) {
+          var tester = app.$.tester;
+
+          expect(subscription.topic).to.be.equal('com.myapp.test');
+          expect(subscription.options.match).to.be.undefined;
+
+          done();
+        }
+
+        app.$.subscriber.subscribe();
+      });
+
+      test('should fire subscribe', function(done) {
+        app.handleSubscribe = function(e, subscription) {
+          expect(subscription.topic).to.be.equal('com.myapp.test');
+          done();
+        };
+
+        app.$.tester.subscriptions[0].resolve(app.$.tester.subscriptions[0]);
+      });
+
+      test('should fire event', function(done) {
+        var tester = app.$.tester;
+
+        app.handleEvent = function(e, data) {
+          expect(data.args[0]).to.be.equal("arg");
+          expect(data.kwargs.key).to.be.equal("value");
+          expect(data.details).to.be.ok;
+
+          done();
+        };
+
+        tester.subscriptions[0].handler(["arg"], {key: "value"}, {});
+      });
+
+      test('should unsubscribe when resubscribe', function(done) {
+        var called = false;
+
+        app.testerUnsubscribe = function(e, unsubscription) {
+          expect(unsubscription.subscription.topic).to.be.equal('com.myapp.test');
+
+          called = true;
+          unsubscription.resolve();
+        };
+
+        app.testerSubscribe = function(e, subscription) {
+          expect(subscription.topic).to.be.equal('com.myapp2.test');
+          expect(subscription.options.match).to.be.undefined;
+          expect(called).to.be.true;
+
+          subscription.resolve(subscription);
+          done();
+        };
+
+        app.$.subscriber.topic = "com.myapp2.test";
+        app.$.subscriber.subscribe();
+      });
+
+      test('should fire event when unsubscribe', function(done) {
+        app.handleUnsubscribe = function(e, subscription) {
+          expect(subscription.topic).to.be.equal('com.myapp2.test');
+          done();
+        };
+
+        app.$.subscriber.unsubscribe();
+      });
+    });
+  </script>
+
+  </body>
+</html>
