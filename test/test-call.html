@@ -1,0 +1,66 @@
+<!--
+@license
+Copyright (c) 2015 Jaka Hudoklin. All rights reserved.
+This code may only be used under the MIT license found at
+https://opensource.org/licenses/MIT
+-->
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+
+    <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+    <script src="../../web-component-tester/browser.js"></script>
+
+    <!-- Step 1: import the element to test -->
+    <link rel="import" href="../wamp-tester.html">
+    <link rel="import" href="../wamp-call.html">
+  </head>
+  <body>
+
+  <!-- You can use the document as a place to set up your fixtures. -->
+  <template is="dom-bind" id="TrivialCaller">
+    <wamp-tester
+      session='{{session}}'
+      id="tester"
+      on-call="testerCall"
+    ></wamp-tester>
+    <wamp-call
+      id="caller"
+      session='{{session}}'
+      method="com.myapp.test"
+      on-response="handleResponse"
+      last-response="{{lastResponse}}"
+    ></wamp-call>
+  </template>
+
+  <script>
+    suite('<wamp-call>', function() {
+      var app;
+
+      setup(function() {
+        app = document.querySelector("#TrivialCaller");
+      });
+
+      teardown(function() {
+        app.handleResponse = undefined;
+        app.lastResponse = undefined;
+        app.testerCall = undefined;
+      });
+
+      test('should call a method', function(done) {
+        var request = app.$.caller.generateRequest();
+
+        expect(request).to.be.equal(app.$.caller.lastRequest);
+
+        app.$.tester.calls[0].resolve();
+        request.response.then(function(response) {
+          expect(response.procedure).to.be.equal("com.myapp.test");
+          done();
+        });
+      });
+    });
+  </script>
+
+  </body>
+</html>

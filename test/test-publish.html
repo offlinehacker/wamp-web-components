@@ -76,7 +76,7 @@ https://opensource.org/licenses/MIT
       test('publish acknowledge', function(done) {
         var app = document.querySelector("#PublishAcknowledge");
         app.handleEvent = function(e, event) {
-          event.resolve(true);
+          event.resolve();
         };
 
         var published = app.$.publish.generateEvent();

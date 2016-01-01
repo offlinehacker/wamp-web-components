@@ -71,7 +71,7 @@ https://opensource.org/licenses/MIT
           done();
         };
 
-        app.$.tester.subscriptions[0].resolve(app.$.tester.subscriptions[0]);
+        app.$.tester.subscriptions[0].resolve();
       });
 
       test('should fire event', function(done) {
@@ -103,7 +103,7 @@ https://opensource.org/licenses/MIT
           expect(subscription.options.match).to.be.undefined;
           expect(called).to.be.true;
 
-          subscription.resolve(subscription);
+          subscription.resolve();
           done();
         };
 

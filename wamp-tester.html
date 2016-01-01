@@ -118,7 +118,7 @@ Example:
       /**
        * List of called procedures
        */
-      called: {
+      calls: {
         type: Array,
         readOnly: true,
         notify: true,
@@ -133,19 +133,18 @@ Example:
     },
 
     call: function(procedure, args, kwargs) {
-      var self = this;
       return new Promise(function(resolve, reject) {
         var call = {
           procedure: procedure,
           args: args,
           kwargs: kwargs,
-          resolve: resolve,
           reject: reject
         };
+        call['resolve'] = this._resolve(resolve, call);
 
-        self.push('calls', call);
-        self.fire('call', call);
-      });
+        this.push('calls', call);
+        this.fire('call', call);
+      }.bind(this));
     },
 
     register: function(procedure, endpoint, options) {
@@ -165,9 +164,9 @@ Example:
           topic: topic,
           handler: handler,
           options: options,
-          resolve: resolve,
           reject: reject
         };
+        subscription['resolve'] = this._resolve(resolve, subscription);
 
         this.push('subscriptions', subscription);
         this.fire('subscribe', subscription);
@@ -180,9 +179,9 @@ Example:
       return new Promise(function(resolve, reject) {
         var unsubscription = {
           subscription: subscription,
-          resolve: resolve,
           reject: reject
         };
+        unsubscription['resolve'] = this._resolve(resolve, unsubscription);
 
         this.push('unsubscriptions', unsubscription);
         this.fire('unsubscribe', unsubscription);
@@ -190,25 +189,28 @@ Example:
     },
 
     publish: function(topic, args, kwargs, options) {
-      var self = this;
-
       var result = new Promise(function(resolve, reject) {
         var publication = {
           topic: topic,
           args: args,
           kwargs: kwargs,
           options: options,
-          resolve: resolve,
           reject: reject
         };
+        publication['resolve'] = this._resolve(resolve, publication);
 
-        self.push('published', publication);
-        self.fire('publish', publication);
-      });
+        this.push('published', publication);
+        this.fire('publish', publication);
+      }.bind(this));
 
       if (options.acknowledge) return result;
-    }
+    },
 
+    _resolve: function(resolver, result) {
+      return function(newResult) {
+        resolver(result || newResult);
+      };
+    }
   });
 
 </script>
