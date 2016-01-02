@@ -138,13 +138,21 @@ Example:
           procedure: procedure,
           args: args,
           kwargs: kwargs,
-          reject: reject
+          reject: reject,
+          resolve: resolve
         };
-        call['resolve'] = this._resolve(resolve, call);
 
         this.push('calls', call);
         this.fire('call', call);
       }.bind(this));
+    },
+
+    getCall: function(procedure) {
+      for (id in this.calls) {
+        if(this.calls[id].procedure == procedure) {
+          return this.calls[id];
+        }
+      }
     },
 
     register: function(procedure, endpoint, options) {
@@ -173,6 +181,14 @@ Example:
 
         return subscription;
       }.bind(this));
+    },
+
+    getSubscription: function(topic) {
+      for (id in this.subscriptions) {
+        if(this.subscriptions[id].topic == topic) {
+          return this.subscriptions[id];
+        }
+      }
     },
 
     unsubscribe: function(subscription) {
