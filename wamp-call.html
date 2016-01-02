@@ -65,7 +65,8 @@ Example:
        */
       session: {
         type: Object,
-        notify: true
+        notify: true,
+        value: null
       },
 
       /*
@@ -74,6 +75,7 @@ Example:
       method: {
         type: String,
         notify: true,
+        value: null
       },
 
       /*
@@ -167,6 +169,10 @@ Example:
     ],
 
     generateRequest: function() {
+      if (this.method == null || this.session == null) {
+        return;
+      }
+
       var response = this.session.call(this.method, this.args, this.kwargs);
 
       var request = {
@@ -178,10 +184,12 @@ Example:
 
       this.activeRequests.push(request);
 
-      request.response
+      response = request.response
         .then(this._handleResponse.bind(this, request))
         .catch(this._handleError.bind(this, request))
         .then(this._discardRequest.bind(this, request));
+
+      request["response"] = response;
 
       this._setLastRequest(request);
       this._setLoading(true);
@@ -200,6 +208,8 @@ Example:
 
       request.response = response;
       this.fire('response', request, {bubbles: false});
+
+      return response;
     },
 
 
@@ -217,22 +227,22 @@ Example:
         request: request,
         error: error
       }, {bubbles: false});
+
+      return Promise.reject(error);
     },
 
-    _discardRequest: function(request) {
+    _discardRequest: function(request, response) {
       var requestIndex = this.activeRequests.indexOf(request);
 
       if (requestIndex > -1) {
         this.activeRequests.splice(requestIndex, 1);
       }
+
+      return response;
     },
 
     _requestOptionsChanged: function() {
       this.debounce('generateRequest', function() {
-        if (this.method == null || this.session == null) {
-          return;
-        }
-
         if(this.auto) {
           this.generateRequest();
         }
